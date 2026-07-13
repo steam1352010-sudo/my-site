@@ -13,6 +13,7 @@ a { text-decoration: none; color: #3b5998; cursor: pointer; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .topbar .logo { color: white; font-size: 24px; font-weight: bold; }
@@ -27,6 +28,62 @@ a { text-decoration: none; color: #3b5998; cursor: pointer; }
   margin-left: 8px;
   font-size: 12px;
 }
+
+.topbar-center {
+  position: relative;
+  width: min(420px, 100%);
+  flex: 1;
+  max-width: 420px;
+}
+.search-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 20px;
+  outline: none;
+  font-size: 13px;
+}
+.search-results {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  z-index: 50;
+  max-height: 320px;
+  overflow: auto;
+}
+.search-empty {
+  background: #fff;
+  border: 1px solid #dddfe2;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  color: #90949c;
+}
+.search-item {
+  background: #fff;
+  border: 1px solid #dddfe2;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.search-item-banned {
+  border-color: #f5b7b1;
+  background: #fff7f7;
+}
+.search-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.search-meta { flex: 1; min-width: 0; }
+.search-name { font-size: 13px; font-weight: bold; }
+.search-username { color: #90949c; font-size: 12px; }
+.search-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .container {
   max-width: 950px;
@@ -53,7 +110,7 @@ a { text-decoration: none; color: #3b5998; cursor: pointer; }
   padding-bottom: 6px;
 }
 
-textarea, input[type=text], input[type=email], input[type=password] {
+textarea, input[type=text], input[type=email], input[type=password], select {
   width: 100%;
   padding: 6px;
   border: 1px solid #ccc;
@@ -79,15 +136,9 @@ button, .btn {
 }
 button:hover, .btn:hover { background: #365899; }
 
-.danger-btn {
-  background: #c0392b;
-}
-.danger-btn:hover {
-  background: #a93226;
-}
-.danger-link {
-  color: #c0392b !important;
-}
+.danger-btn { background: #c0392b; }
+.danger-btn:hover { background: #a93226; }
+.danger-link { color: #c0392b !important; }
 
 .login-box { max-width: 400px; margin: 60px auto; }
 .error { color: red; font-size: 13px; }
@@ -100,9 +151,7 @@ button:hover, .btn:hover { background: #365899; }
   display: block;
   object-fit: cover;
 }
-.profile-preview {
-  max-height: 180px;
-}
+.profile-preview { max-height: 180px; }
 .muted { font-size: 12px; color: #90949c; }
 .bio-text {
   white-space: pre-wrap;
@@ -164,6 +213,51 @@ button:hover, .btn:hover { background: #365899; }
   flex-wrap: wrap;
 }
 
+.message-panel textarea {
+  margin-top: 8px;
+}
+.message-thread {
+  max-height: 280px;
+  overflow: auto;
+  padding: 4px 0 10px;
+}
+.msg-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+.msg-row.me { align-items: flex-start; }
+.msg-row.them { align-items: flex-end; }
+.msg-bubble {
+  max-width: 80%;
+  background: #f0f2f5;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+  white-space: pre-wrap;
+}
+.msg-row.me .msg-bubble {
+  background: #dbeafe;
+}
+.msg-time {
+  font-size: 10px;
+  color: #90949c;
+  margin-top: 3px;
+}
+
+.reel-card { overflow: hidden; }
+.reel-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.reel-video {
+  width: 100%;
+  max-height: 520px;
+  border-radius: 6px;
+  background: #000;
+}
 .post { border-bottom: 1px solid #eee; padding: 10px 0; }
 .post .userpic {
   width: 32px; height: 32px; border-radius: 3px;
@@ -173,7 +267,7 @@ button:hover, .btn:hover { background: #365899; }
 .post .author { font-weight: bold; color: #3b5998; }
 .post .content { margin: 6px 0; white-space: pre-wrap; }
 .post .postimg { max-width: 100%; border-radius: 3px; margin-top: 6px; }
-.post .meta { font-size: 11px; color: #90949c; margin-top: 4px; }
+.post .meta, .meta { font-size: 11px; color: #90949c; margin-top: 4px; }
 .post .actions a { margin-left: 10px; font-size: 12px; color: #4267b2; }
 .comment {
   font-size: 12px; background: #f0f2f5;
