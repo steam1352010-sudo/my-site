@@ -10,6 +10,18 @@
 
   <div class="topbar">
     <div class="logo">facebook</div>
+
+    <div class="topbar-center">
+      <input
+        type="text"
+        id="friendSearch"
+        class="search-input"
+        placeholder="ابحث عن الأصدقاء..."
+        oninput="handleSearchInput(this.value)"
+      >
+      <div id="searchResults" class="search-results"></div>
+    </div>
+
     <div id="topbarUser" class="topbar-user"></div>
   </div>
 
@@ -47,8 +59,26 @@
         <p id="homeSideBio" class="bio-text muted"></p>
         <a onclick="goToProfile(currentUser.id)">عرض ملفي الشخصي</a>
       </div>
+
       <div class="main">
         <div id="adminPanel"></div>
+
+        <div id="messageBox"></div>
+
+        <div class="box">
+          <h3>الريلز</h3>
+          <p class="muted">الدقة المفضلة: 1080p كحد أقصى، بنسبة 16:9، وحجم لا يتجاوز 10 ميجابايت.</p>
+          <select id="reelMode">
+            <option value="reel">ريلز</option>
+            <option value="background">فيديو خلفية</option>
+          </select>
+          <input type="file" id="reelVideo" accept="video/*">
+          <textarea id="reelCaption" rows="2" placeholder="اكتب وصفًا للريل..."></textarea>
+          <p id="reelError" class="error"></p>
+          <button onclick="createReel()">نشر الريل</button>
+        </div>
+
+        <div id="reelsFeed"></div>
 
         <div class="box">
           <h3>بماذا تفكر؟</h3>
@@ -56,6 +86,7 @@
           <input type="file" id="postImage" accept="image/*">
           <button onclick="createPost()">نشر</button>
         </div>
+
         <div id="feed"></div>
       </div>
     </div>
@@ -71,10 +102,11 @@
         <p id="profStatusNote"></p>
         <p id="profBioDisplay" class="bio-text muted"></p>
         <div id="friendActionBox"></div>
-        <a onclick="showScreen('homeScreen'); renderFeed(); renderAdminPanel();">العودة للرئيسية</a>
+        <a onclick="showScreen('homeScreen'); renderFeed(); renderAdminPanel(); renderMessagePanel(); renderReels();">العودة للرئيسية</a>
       </div>
       <div class="main">
         <div id="profilePostBox"></div>
+        <div id="profileReelsFeed"></div>
         <div id="profileFeed"></div>
       </div>
     </div>
