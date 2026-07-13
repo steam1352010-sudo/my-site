@@ -1,8 +1,11 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="BrowseBook - مشروع اجتماعي تعليمي تجريبي">
+<meta name="robots" content="noindex,nofollow">
 <title>BrowseBook</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -25,95 +28,36 @@
     <div id="topbarUser" class="topbar-user"></div>
   </div>
 
-  <!-- شاشة تسجيل الدخول -->
+  <div class="notice-bar">
+    هذا مشروع تعليمي وتجريبي باسم BrowseBook، وليس منصة رسمية أو تابعة لأي شركة.
+  </div>
+
   <div id="loginScreen" class="screen login-box box">
-    <h3>تسجيل الدخول</h3>
+    <h3>دخول إلى BrowseBook</h3>
     <p id="loginError" class="error"></p>
     <input type="text" id="loginUsername" placeholder="اسم المستخدم">
-    <input type="password" id="loginPassword" placeholder="كلمة المرور">
+    <input type="password" id="loginPassword" placeholder="رمز الدخول">
     <button onclick="handleLogin()">دخول</button>
     <p class="switch-link">ليس لديك حساب؟ <a onclick="showScreen('registerScreen')">إنشاء حساب جديد</a></p>
   </div>
 
-  <!-- شاشة إنشاء حساب -->
   <div id="registerScreen" class="screen login-box box" style="display:none;">
-    <h3>إنشاء حساب جديد</h3>
+    <h3>إنشاء حساب في BrowseBook</h3>
     <p id="registerError" class="error"></p>
     <input type="text" id="registerName" placeholder="الاسم الكامل">
     <input type="text" id="registerUsername" placeholder="اسم المستخدم">
     <input type="email" id="registerEmail" placeholder="البريد الإلكتروني">
-    <input type="password" id="registerPassword" placeholder="كلمة المرور">
+    <input type="password" id="registerPassword" placeholder="رمز الدخول">
     <input type="file" id="registerAvatar" accept="image/*">
     <textarea id="registerBio" rows="3" placeholder="اكتب سيرة ذاتية قصيرة..."></textarea>
     <button onclick="handleRegister()">إنشاء حساب</button>
     <p class="switch-link">لديك حساب؟ <a onclick="showScreen('loginScreen')">تسجيل الدخول</a></p>
   </div>
 
-  <!-- الصفحة الرئيسية -->
-  <div id="homeScreen" class="screen" style="display:none;">
-    <div class="container">
-      <div class="sidebar box">
-        <img id="sideAvatar" class="side-avatar" src="">
-        <h3 id="sideName"></h3>
-        <p id="sideFriends" class="muted"></p>
-        <p id="homeSideBio" class="bio-text muted"></p>
-        <a onclick="goToProfile(currentUser.id)">عرض ملفي الشخصي</a>
-      </div>
-
-      <div class="main">
-        <div id="adminPanel"></div>
-
-        <div id="messageBox"></div>
-
-        <div class="box">
-          <h3>الريلز</h3>
-          <p class="muted">الدقة المفضلة: 1080p كحد أقصى، بنسبة 16:9، وحجم لا يتجاوز 10 ميجابايت.</p>
-          <select id="reelMode">
-            <option value="reel">ريلز</option>
-            <option value="background">فيديو خلفية</option>
-          </select>
-          <input type="file" id="reelVideo" accept="video/*">
-          <textarea id="reelCaption" rows="2" placeholder="اكتب وصفًا للريل..."></textarea>
-          <p id="reelError" class="error"></p>
-          <button onclick="createReel()">نشر الريل</button>
-        </div>
-
-        <div id="reelsFeed"></div>
-
-        <div class="box">
-          <h3>بماذا تفكر؟</h3>
-          <textarea id="postText" rows="2" placeholder="اكتب منشوراً..."></textarea>
-          <input type="file" id="postImage" accept="image/*">
-          <button onclick="createPost()">نشر</button>
-        </div>
-
-        <div id="feed"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- صفحة البروفايل -->
-  <div id="profileScreen" class="screen" style="display:none;">
-    <div class="container">
-      <div class="sidebar box">
-        <img id="profAvatar" class="side-avatar" src="">
-        <h3 id="profName"></h3>
-        <p id="profFriends" class="muted"></p>
-        <p id="profStatusNote"></p>
-        <p id="profBioDisplay" class="bio-text muted"></p>
-        <div id="friendActionBox"></div>
-        <a onclick="showScreen('homeScreen'); renderFeed(); renderAdminPanel(); renderMessagePanel(); renderReels();">العودة للرئيسية</a>
-      </div>
-      <div class="main">
-        <div id="profilePostBox"></div>
-        <div id="profileReelsFeed"></div>
-        <div id="profileFeed"></div>
-      </div>
-    </div>
-  </div>
+  <!-- باقي الصفحة كما هو عندك -->
 
   <footer class="site-footer">
-    كل الحقوق محفوضة لموقع BrowseBook 2026
+    كل الحقوق محفوظة لموقع BrowseBook 2026
   </footer>
 
   <script src="app.js"></script>
