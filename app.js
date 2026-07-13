@@ -36,9 +36,17 @@ function saveUsers(u) {
 function getPosts() { return JSON.parse(localStorage.getItem("fb_posts") || "[]"); }
 function savePosts(p) { localStorage.setItem("fb_posts", JSON.stringify(p)); }
 
+function getMessages() { return JSON.parse(localStorage.getItem("fb_messages") || "[]"); }
+function saveMessages(m) { localStorage.setItem("fb_messages", JSON.stringify(m)); }
+
+function getReels() { return JSON.parse(localStorage.getItem("fb_reels") || "[]"); }
+function saveReels(r) { localStorage.setItem("fb_reels", JSON.stringify(r)); }
+
 let currentUser = null;
 let currentProfileUserId = null;
+let currentChatUserId = null;
 
+// ============ أدوات مساعدة ============
 function isRoot() {
   return !!currentUser && currentUser.role === "root";
 }
@@ -54,10 +62,83 @@ function fileToDataURL(file, done) {
   reader.readAsDataURL(file);
 }
 
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function findUserById(userId) {
+  if (userId === "root") {
+    return {
+      id: "root",
+      name: "Root",
+      username: "Root",
+      avatar: "https://via.placeholder.com/150/111111/ffffff?text=ROOT",
+      bio: "وضع المطور",
+      friends: [],
+      banned: false,
+      role: "root"
+    };
+  }
+  return getUsers().find(u => u.id === userId) || null;
+}
+
+function refreshCurrentUserFromStorage() {
+  if (!currentUser || isRoot()) return;
+  const users = getUsers();
+  const fresh = users.find(u => u.id === currentUser.id);
+  if (fresh) currentUser = fresh;
+}
+
 // ============ التنقل بين الشاشات ============
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
   document.getElementById(id).style.display = "block";
+}
+
+// ============ البحث عن الأصدقاء ============
+function handleSearchInput(value) {
+  const q = value.trim().toLowerCase();
+  const box = document.getElementById("searchResults");
+  if (!box) return;
+
+  if (!q) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const users = getUsers().filter(u => {
+    const hay = `${u.name} ${u.username} ${u.email}`.toLowerCase();
+    return hay.includes(q) && u.id !== currentUser?.id;
+  });
+
+  if (!users.length) {
+    box.innerHTML = `<div class="search-empty">لا توجد نتائج</div>`;
+    return;
+  }
+
+  box.innerHTML = users.map(u => `
+    <div class="search-item ${u.banned ? "search-item-banned" : ""}">
+      <img src="${u.avatar}" class="search-avatar">
+      <div class="search-meta">
+        <div class="search-name">${escapeHtml(u.name)} <span class="search-username">@${escapeHtml(u.username)}</span></div>
+        ${u.banned ? `<div class="banned-note">لم يعد هذا الحساب متوفرا في الوقت الحالي</div>` : ""}
+      </div>
+      <div class="search-actions">
+        <button onclick="goToProfile('${u.id}')">الملف</button>
+        ${u.banned ? "" : `<button onclick="openChat('${u.id}')">رسالة</button>`}
+      </div>
+    </div>
+  `).join("");
+}
+
+function clearSearchResults() {
+  const input = document.getElementById("friendSearch");
+  const box = document.getElementById("searchResults");
+  if (input) input.value = "";
+  if (box) box.innerHTML = "";
 }
 
 // ============ تسجيل حساب ============
@@ -146,7 +227,7 @@ function handleLogin() {
   }
 
   if (user.banned) {
-    errorEl.textContent = "لقد تم حضر هذا الحساب";
+    errorEl.textContent = "لم يعد هذا الحساب متوفرا في الوقت الحالي";
     return;
   }
 
@@ -160,6 +241,8 @@ function loginAs(user) {
   renderTopbar();
   renderSidebar();
   renderAdminPanel();
+  renderMessagePanel();
+  renderReels();
   showScreen("homeScreen");
   renderFeed();
 }
@@ -179,6 +262,8 @@ function loginAsRoot() {
   renderTopbar();
   renderSidebar();
   renderAdminPanel();
+  renderMessagePanel();
+  renderReels();
   showScreen("homeScreen");
   renderFeed();
 }
@@ -186,6 +271,7 @@ function loginAsRoot() {
 function logout() {
   currentUser = null;
   currentProfileUserId = null;
+  currentChatUserId = null;
   localStorage.removeItem("fb_currentUserId");
   showScreen("loginScreen");
   renderTopbar();
@@ -214,7 +300,7 @@ function renderTopbar() {
   `;
 }
 
-// ============ الشريط الجانبي (الرئيسية) ============
+// ============ الشريط الجانبي ============
 function renderSidebar() {
   if (!currentUser) return;
 
@@ -225,7 +311,7 @@ function renderSidebar() {
 
   if (isRoot()) {
     document.getElementById("sideFriends").textContent =
-      "المستخدمون: " + getUsers().length + " | المنشورات: " + getPosts().length;
+      "المستخدمون: " + getUsers().length + " | المنشورات: " + getPosts().length + " | الريلز: " + getReels().length;
     document.getElementById("homeSideBio").textContent = "وضع المطور";
   } else {
     document.getElementById("sideFriends").textContent = "الأصدقاء: " + currentUser.friends.length;
@@ -259,7 +345,7 @@ function renderAdminPanel() {
                 <span class="muted">@${escapeHtml(u.username)}</span>
               </div>
               <div class="muted">${escapeHtml(u.email)}</div>
-              ${u.banned ? `<div class="banned-note">لقد تم حضر هذا الحساب</div>` : ""}
+              ${u.banned ? `<div class="banned-note">لم يعد هذا الحساب متوفرا في الوقت الحالي</div>` : ""}
             </div>
             <div class="admin-actions">
               <button onclick="goToProfile('${u.id}')">عرض</button>
@@ -271,6 +357,229 @@ function renderAdminPanel() {
       </div>
     </div>
   `;
+}
+
+// ============ الرسائل ============
+function openChat(userId) {
+  currentChatUserId = userId;
+  const input = document.getElementById("friendSearch");
+  if (input) input.value = "";
+  const box = document.getElementById("searchResults");
+  if (box) box.innerHTML = "";
+  showScreen("homeScreen");
+  renderMessagePanel();
+  const panel = document.getElementById("messageBox");
+  if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderMessagePanel() {
+  const el = document.getElementById("messageBox");
+  if (!el || !currentUser) return;
+
+  if (!currentChatUserId) {
+    el.innerHTML = `
+      <div class="box message-panel">
+        <h3>الرسائل</h3>
+        <p class="muted">ابحث عن صديق من الأعلى ثم اختر "رسالة".</p>
+      </div>
+    `;
+    return;
+  }
+
+  const recipient = findUserById(currentChatUserId);
+  if (!recipient) {
+    el.innerHTML = `
+      <div class="box message-panel">
+        <h3>الرسائل</h3>
+        <p class="muted">المستخدم غير موجود.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const messages = getMessages()
+    .filter(m =>
+      (m.fromId === currentUser.id && m.toId === recipient.id) ||
+      (m.fromId === recipient.id && m.toId === currentUser.id)
+    )
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+  el.innerHTML = `
+    <div class="box message-panel">
+      <h3>محادثة مع ${escapeHtml(recipient.name)} @${escapeHtml(recipient.username)}</h3>
+      ${recipient.banned ? `<p class="banned-note">لم يعد هذا الحساب متوفرا في الوقت الحالي</p>` : ""}
+      <div class="message-thread">
+        ${messages.length ? messages.map(m => `
+          <div class="msg-row ${m.fromId === currentUser.id ? "me" : "them"}">
+            <div class="msg-bubble">${escapeHtml(m.text)}</div>
+            <div class="msg-time">${new Date(m.createdAt).toLocaleString("ar-EG")}</div>
+          </div>
+        `).join("") : `<p class="muted">لا توجد رسائل بعد.</p>`}
+      </div>
+      <textarea id="messageText" rows="2" placeholder="اكتب رسالة..."></textarea>
+      <button onclick="sendMessage()">إرسال</button>
+    </div>
+  `;
+}
+
+function sendMessage() {
+  const recipient = findUserById(currentChatUserId);
+  if (!recipient || recipient.banned) return;
+
+  const input = document.getElementById("messageText");
+  const text = input.value.trim();
+  if (!text) return;
+
+  const messages = getMessages();
+  messages.push({
+    id: Date.now().toString(),
+    fromId: currentUser.id,
+    toId: recipient.id,
+    text,
+    createdAt: Date.now()
+  });
+  saveMessages(messages);
+  input.value = "";
+  renderMessagePanel();
+}
+
+// ============ الريلز ============
+function createReel() {
+  const fileInput = document.getElementById("reelVideo");
+  const file = fileInput.files[0];
+  const caption = document.getElementById("reelCaption").value.trim();
+  const mode = document.getElementById("reelMode").value;
+  const errorEl = document.getElementById("reelError");
+  errorEl.textContent = "";
+
+  if (!file) {
+    errorEl.textContent = "اختر فيديو أولًا";
+    return;
+  }
+
+  if (!file.type.startsWith("video/")) {
+    errorEl.textContent = "الملف يجب أن يكون فيديو";
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    errorEl.textContent = "حجم الفيديو يجب ألا يتجاوز 10 ميجابايت";
+    return;
+  }
+
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.onloadedmetadata = function () {
+    URL.revokeObjectURL(video.src);
+
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    const duration = video.duration || 0;
+    const ratio = width / height;
+    const targetRatio = 16 / 9;
+
+    if (Math.abs(ratio - targetRatio) > 0.1) {
+      errorEl.textContent = "يجب أن يكون الفيديو بنسبة 16:9";
+      return;
+    }
+
+    if (mode === "reel") {
+      if (width > 1920 || height > 1080) {
+        errorEl.textContent = "دقة الريلز يجب ألا تتجاوز 1080p";
+        return;
+      }
+
+      if (duration > 60) {
+        errorEl.textContent = "الريلز يجب أن يكون قصيرًا";
+        return;
+      }
+
+      if (duration > 0) {
+        const estimatedKbps = (file.size * 8) / duration / 1000;
+        if (estimatedKbps < 2000 || estimatedKbps > 5000) {
+          errorEl.textContent = "معدل البت للريلز يجب أن يكون بين 2000 و 5000 kbps تقريبًا";
+          return;
+        }
+      }
+    } else {
+      if (width > 1280 || height > 720) {
+        errorEl.textContent = "فيديو الخلفية يجب ألا يتجاوز 720p";
+        return;
+      }
+    }
+
+    fileToDataURL(file, (videoData) => {
+      const reels = getReels();
+      reels.push({
+        id: Date.now().toString(),
+        userId: currentUser.id,
+        caption,
+        video: videoData,
+        mode,
+        width,
+        height,
+        duration,
+        createdAt: Date.now()
+      });
+      saveReels(reels);
+      fileInput.value = "";
+      document.getElementById("reelCaption").value = "";
+      renderReels();
+      renderProfileReels(currentUser.id);
+    });
+  };
+
+  video.onerror = function () {
+    errorEl.textContent = "تعذر قراءة بيانات الفيديو";
+  };
+
+  video.src = URL.createObjectURL(file);
+}
+
+function renderReels() {
+  const box = document.getElementById("reelsFeed");
+  if (!box) return;
+
+  const reels = getReels().sort((a, b) => b.createdAt - a.createdAt);
+  const users = getUsers();
+
+  box.innerHTML = reels.length ? reels.map(r => {
+    const author = users.find(u => u.id === r.userId);
+    return `
+      <div class="box reel-card">
+        <div class="reel-head">
+          <img class="userpic" src="${author ? author.avatar : ""}">
+          <div>
+            <div class="author-line">
+              <a class="author" onclick="goToProfile('${r.userId}')">${author ? escapeHtml(author.name) : "مستخدم محذوف"}</a>
+            </div>
+            <div class="muted">@${author ? escapeHtml(author.username) : "deleted"}</div>
+          </div>
+        </div>
+        ${author && author.banned ? `<div class="banned-note">لم يعد هذا الحساب متوفرا في الوقت الحالي</div>` : ""}
+        <video class="reel-video" controls src="${r.video}"></video>
+        ${r.caption ? `<div class="content">${escapeHtml(r.caption)}</div>` : ""}
+        <div class="meta">${new Date(r.createdAt).toLocaleString("ar-EG")} — ${r.mode === "background" ? "خلفية فيديو" : "ريلز"}</div>
+      </div>
+    `;
+  }).join("") : `<div class="box">لا توجد ريلز بعد.</div>`;
+}
+
+function renderProfileReels(userId) {
+  const box = document.getElementById("profileReelsFeed");
+  if (!box) return;
+
+  const reels = getReels()
+    .filter(r => r.userId === userId)
+    .sort((a, b) => b.createdAt - a.createdAt);
+
+  box.innerHTML = reels.length ? reels.map(r => `
+    <div class="box reel-card">
+      <video class="reel-video" controls src="${r.video}"></video>
+      ${r.caption ? `<div class="content">${escapeHtml(r.caption)}</div>` : ""}
+      <div class="meta">${new Date(r.createdAt).toLocaleString("ar-EG")}</div>
+    </div>
+  `).join("") : `<div class="box">لا توجد ريلز بعد.</div>`;
 }
 
 // ============ نشر منشور ============
@@ -328,7 +637,7 @@ function postHTML(post, users) {
       <a class="author ${bannedAuthor ? "banned-name" : ""}" onclick="goToProfile('${post.userId}')">
         ${author ? escapeHtml(author.name) : "مستخدم محذوف"}
       </a>
-      ${bannedAuthor ? `<span class="banned-note inline-note">لقد تم حضر هذا الحساب</span>` : ""}
+      ${bannedAuthor ? `<span class="banned-note inline-note">لم يعد هذا الحساب متوفرا في الوقت الحالي</span>` : ""}
     </div>
     <div class="content">${escapeHtml(post.text)}</div>
     ${post.image ? `<img class="postimg" src="${post.image}">` : ""}
@@ -346,13 +655,6 @@ function postHTML(post, users) {
     </div>
     <input type="text" class="comment-input" placeholder="اكتب تعليقاً..." onkeypress="handleCommentKey(event, '${post.id}', this)">
   </div>`;
-}
-
-function escapeHtml(str) {
-  return String(str || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 // ============ الإعجاب ============
@@ -393,9 +695,9 @@ function goToProfile(userId) {
   document.getElementById("profName").textContent = profileUser.name;
   document.getElementById("profFriends").textContent = "الأصدقاء: " + profileUser.friends.length;
   document.getElementById("profBioDisplay").textContent = profileUser.bio ? profileUser.bio : "لا توجد سيرة ذاتية بعد";
-
-  const statusEl = document.getElementById("profStatusNote");
-  statusEl.innerHTML = profileUser.banned ? `<span class="banned-note">لقد تم حضر هذا الحساب</span>` : "";
+  document.getElementById("profStatusNote").innerHTML = profileUser.banned
+    ? `<span class="banned-note">لم يعد هذا الحساب متوفرا في الوقت الحالي</span>`
+    : "";
 
   const isMe = profileUser.id === currentUser.id;
   const isFriend = !isRoot() && Array.isArray(currentUser.friends) && currentUser.friends.includes(profileUser.id);
@@ -403,12 +705,12 @@ function goToProfile(userId) {
   document.getElementById("friendActionBox").innerHTML = isMe
     ? ""
     : isRoot()
-      ? `<p class="muted">يمكنك إدارة هذا الحساب من هنا</p>`
+      ? `<p class="muted">يمكنك إدارة هذا الحساب من هنا</p><button onclick="openChat('${profileUser.id}')">رسالة</button>`
       : profileUser.banned
         ? ""
         : isFriend
-          ? `<p class="muted" style="color:green;">صديق بالفعل ✔</p>`
-          : `<button onclick="addFriend('${profileUser.id}')">إضافة صديق</button>`;
+          ? `<p class="muted" style="color:green;">صديق بالفعل ✔</p><button onclick="openChat('${profileUser.id}')">رسالة</button>`
+          : `<button onclick="addFriend('${profileUser.id}')">إضافة صديق</button><button onclick="openChat('${profileUser.id}')">رسالة</button>`;
 
   document.getElementById("profilePostBox").innerHTML = isMe
     ? `<div class="box profile-edit-box">
@@ -428,6 +730,7 @@ function goToProfile(userId) {
       : "";
 
   renderProfileFeed(userId);
+  renderProfileReels(userId);
   showScreen("profileScreen");
 }
 
@@ -438,6 +741,23 @@ function renderProfileFeed(userId) {
     .sort((a, b) => b.createdAt - a.createdAt);
   document.getElementById("profileFeed").innerHTML =
     posts.map(p => postHTML(p, users)).join("") || `<div class="box">لا توجد منشورات بعد.</div>`;
+}
+
+function renderProfileReels(userId) {
+  const box = document.getElementById("profileReelsFeed");
+  if (!box) return;
+
+  const reels = getReels()
+    .filter(r => r.userId === userId)
+    .sort((a, b) => b.createdAt - a.createdAt);
+
+  box.innerHTML = reels.length ? reels.map(r => `
+    <div class="box reel-card">
+      <video class="reel-video" controls src="${r.video}"></video>
+      ${r.caption ? `<div class="content">${escapeHtml(r.caption)}</div>` : ""}
+      <div class="meta">${new Date(r.createdAt).toLocaleString("ar-EG")}</div>
+    </div>
+  `).join("") : `<div class="box">لا توجد ريلز بعد.</div>`;
 }
 
 function saveProfileChanges() {
@@ -498,6 +818,7 @@ function deletePost(postId) {
   renderFeed();
   if (currentProfileUserId) renderProfileFeed(currentProfileUserId);
   renderAdminPanel();
+  renderReels();
 }
 
 function toggleBanUser(userId) {
@@ -512,6 +833,7 @@ function toggleBanUser(userId) {
 
   renderAdminPanel();
   renderFeed();
+  renderReels();
 
   if (currentProfileUserId === userId) {
     goToProfile(userId);
@@ -523,6 +845,8 @@ function deleteUser(userId) {
 
   const users = getUsers();
   const posts = getPosts();
+  const messages = getMessages();
+  const reels = getReels();
 
   const filteredUsers = users.filter(u => u.id !== userId).map(u => {
     u.friends = (u.friends || []).filter(fid => fid !== userId);
@@ -537,8 +861,13 @@ function deleteUser(userId) {
       comments: (p.comments || []).filter(c => c.userId !== userId)
     }));
 
+  const filteredMessages = messages.filter(m => m.fromId !== userId && m.toId !== userId);
+  const filteredReels = reels.filter(r => r.userId !== userId);
+
   saveUsers(filteredUsers);
   savePosts(filteredPosts);
+  saveMessages(filteredMessages);
+  saveReels(filteredReels);
 
   if (currentUser && currentUser.id === userId) {
     logout();
@@ -547,6 +876,7 @@ function deleteUser(userId) {
 
   renderAdminPanel();
   renderFeed();
+  renderReels();
 
   if (currentProfileUserId === userId) {
     showScreen("homeScreen");
@@ -556,14 +886,20 @@ function deleteUser(userId) {
 // ============ عند تحميل الصفحة ============
 window.onload = function () {
   const savedId = localStorage.getItem("fb_currentUserId");
-  if (savedId && savedId !== "root") {
+
+  if (savedId === "root") {
+    loginAsRoot();
+    return;
+  }
+
+  if (savedId) {
     const user = getUsers().find(u => u.id === savedId);
     if (user) {
       if (user.banned) {
         localStorage.removeItem("fb_currentUserId");
         showScreen("loginScreen");
         const err = document.getElementById("loginError");
-        err.textContent = "لقد تم حضر هذا الحساب";
+        err.textContent = "لم يعد هذا الحساب متوفرا في الوقت الحالي";
         err.style.color = "red";
         renderTopbar();
         return;
@@ -572,5 +908,6 @@ window.onload = function () {
       return;
     }
   }
+
   showScreen("loginScreen");
 };
