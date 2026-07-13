@@ -5,6 +5,19 @@ function getPosts() { return JSON.parse(localStorage.getItem("fb_posts") || "[]"
 function savePosts(p) { localStorage.setItem("fb_posts", JSON.stringify(p)); }
 
 let currentUser = null;
+let currentProfileUserId = null;
+
+// ============ أدوات مساعدة ============
+function validateEmail(email) {
+  return /^[a-z0-9._%+-]+@(gmail\.com|hotmail\.com)$/i.test(email);
+}
+
+function fileToDataURL(file, done) {
+  if (!file) return done(null);
+  const reader = new FileReader();
+  reader.onload = e => done(e.target.result);
+  reader.readAsDataURL(file);
+}
 
 // ============ التنقل بين الشاشات ============
 function showScreen(id) {
@@ -15,8 +28,10 @@ function showScreen(id) {
 // ============ تسجيل حساب ============
 function handleRegister() {
   const name = document.getElementById("registerName").value.trim();
-  const email = document.getElementById("registerEmail").value.trim();
+  let email = document.getElementById("registerEmail").value.trim().toLowerCase();
   const password = document.getElementById("registerPassword").value;
+  const bio = document.getElementById("registerBio").value.trim();
+  const avatarFile = document.getElementById("registerAvatar").files[0];
   const errorEl = document.getElementById("registerError");
   errorEl.textContent = "";
 
@@ -24,26 +39,39 @@ function handleRegister() {
     errorEl.textContent = "الرجاء تعبئة جميع الحقول";
     return;
   }
+
+  if (!validateEmail(email)) {
+    errorEl.textContent = "البريد يجب أن يكون مثل: username@gmail.com أو username@hotmail.com";
+    return;
+  }
+
   const users = getUsers();
   if (users.find(u => u.email === email)) {
     errorEl.textContent = "هذا البريد الإلكتروني مسجل بالفعل";
     return;
   }
-  const newUser = {
-    id: Date.now().toString(),
-    name, email, password,
-    avatar: "https://via.placeholder.com/150/3b5998/ffffff?text=" + encodeURIComponent(name[0] || "U"),
-    friends: [],
-    createdAt: Date.now()
-  };
-  users.push(newUser);
-  saveUsers(users);
-  loginAs(newUser);
+
+  fileToDataURL(avatarFile, (avatarData) => {
+    const newUser = {
+      id: Date.now().toString(),
+      name,
+      email,
+      password,
+      bio,
+      avatar: avatarData || "https://via.placeholder.com/150/3b5998/ffffff?text=" + encodeURIComponent(name[0] || "U"),
+      friends: [],
+      createdAt: Date.now()
+    };
+
+    users.push(newUser);
+    saveUsers(users);
+    loginAs(newUser);
+  });
 }
 
 // ============ تسجيل الدخول ============
 function handleLogin() {
-  const email = document.getElementById("loginEmail").value.trim();
+  let email = document.getElementById("loginEmail").value.trim().toLowerCase();
   const password = document.getElementById("loginPassword").value;
   const errorEl = document.getElementById("loginError");
   errorEl.textContent = "";
@@ -58,8 +86,9 @@ function handleLogin() {
 }
 
 function loginAs(user) {
-  currentUser = user;
-  localStorage.setItem("fb_currentUserId", user.id);
+  const users = getUsers();
+  currentUser = users.find(u => u.id === user.id) || user;
+  localStorage.setItem("fb_currentUserId", currentUser.id);
   renderTopbar();
   renderSidebar();
   showScreen("homeScreen");
@@ -68,6 +97,7 @@ function loginAs(user) {
 
 function logout() {
   currentUser = null;
+  currentProfileUserId = null;
   localStorage.removeItem("fb_currentUserId");
   showScreen("loginScreen");
   renderTopbar();
@@ -87,9 +117,11 @@ function renderTopbar() {
 
 // ============ الشريط الجانبي (الرئيسية) ============
 function renderSidebar() {
+  if (!currentUser) return;
   document.getElementById("sideAvatar").src = currentUser.avatar;
   document.getElementById("sideName").textContent = currentUser.name;
   document.getElementById("sideFriends").textContent = "الأصدقاء: " + currentUser.friends.length;
+  document.getElementById("homeSideBio").textContent = currentUser.bio ? currentUser.bio : "لا توجد سيرة ذاتية بعد";
 }
 
 // ============ نشر منشور ============
@@ -119,7 +151,7 @@ function createPost() {
 
   if (file) {
     const reader = new FileReader();
-    reader.onload = e => savePost(e.target.result); // يحفظ الصورة كـ base64
+    reader.onload = e => savePost(e.target.result);
     reader.readAsDataURL(file);
   } else {
     savePost(null);
@@ -175,7 +207,7 @@ function toggleLike(postId) {
   if (idx >= 0) post.likes.splice(idx, 1);
   else post.likes.push(currentUser.id);
   savePosts(posts);
-  // إعادة رسم القائمة الحالية (رئيسية أو بروفايل)
+
   if (document.getElementById("homeScreen").style.display !== "none") renderFeed();
   else renderProfileFeed(currentProfileUserId);
 }
@@ -185,6 +217,7 @@ function handleCommentKey(event, postId, input) {
   if (event.key === "Enter" && input.value.trim()) {
     const posts = getPosts();
     const post = posts.find(p => p.id === postId);
+    if (!post) return;
     post.comments.push({ userId: currentUser.id, text: input.value.trim(), createdAt: Date.now() });
     savePosts(posts);
     input.value = "";
@@ -194,8 +227,6 @@ function handleCommentKey(event, postId, input) {
 }
 
 // ============ صفحة البروفايل ============
-let currentProfileUserId = null;
-
 function goToProfile(userId) {
   currentProfileUserId = userId;
   const users = getUsers();
@@ -205,6 +236,7 @@ function goToProfile(userId) {
   document.getElementById("profAvatar").src = profileUser.avatar;
   document.getElementById("profName").textContent = profileUser.name;
   document.getElementById("profFriends").textContent = "الأصدقاء: " + profileUser.friends.length;
+  document.getElementById("profBioDisplay").textContent = profileUser.bio ? profileUser.bio : "لا توجد سيرة ذاتية بعد";
 
   const isMe = profileUser.id === currentUser.id;
   const isFriend = currentUser.friends.includes(profileUser.id);
@@ -216,11 +248,13 @@ function goToProfile(userId) {
       : `<button onclick="addFriend('${profileUser.id}')">إضافة صديق</button>`;
 
   document.getElementById("profilePostBox").innerHTML = isMe
-    ? `<div class="box">
-        <h3>بماذا تفكر؟</h3>
-        <textarea id="postText" rows="2" placeholder="اكتب منشوراً..."></textarea>
-        <input type="file" id="postImage" accept="image/*">
-        <button onclick="createPost()">نشر</button>
+    ? `<div class="box profile-edit-box">
+        <h3>تعديل الحساب</h3>
+        <img class="side-avatar profile-preview" src="${profileUser.avatar}">
+        <input type="file" id="profileAvatarInput" accept="image/*">
+        <textarea id="profileBio" rows="3" placeholder="أضف سيرتك الذاتية...">${escapeHtml(profileUser.bio || "")}</textarea>
+        <button onclick="saveProfileChanges()">حفظ التغييرات</button>
+        <p id="profileSaveMsg" class="muted"></p>
       </div>`
     : "";
 
@@ -236,10 +270,41 @@ function renderProfileFeed(userId) {
   document.getElementById("profileFeed").innerHTML = posts.map(p => postHTML(p, users)).join("") || `<div class="box">لا توجد منشورات بعد.</div>`;
 }
 
+function saveProfileChanges() {
+  const users = getUsers();
+  const me = users.find(u => u.id === currentUser.id);
+  if (!me) return;
+
+  const bio = document.getElementById("profileBio").value.trim();
+  const file = document.getElementById("profileAvatarInput").files[0];
+
+  function finish(avatarData) {
+    if (avatarData) me.avatar = avatarData;
+    me.bio = bio;
+
+    saveUsers(users);
+    currentUser = me;
+    localStorage.setItem("fb_currentUserId", me.id);
+
+    renderTopbar();
+    renderSidebar();
+    if (currentProfileUserId === me.id) {
+      goToProfile(me.id);
+      const msg = document.getElementById("profileSaveMsg");
+      if (msg) msg.textContent = "تم حفظ التغييرات";
+    }
+  }
+
+  if (file) fileToDataURL(file, finish);
+  else finish(null);
+}
+
 function addFriend(targetId) {
   const users = getUsers();
   const me = users.find(u => u.id === currentUser.id);
   const target = users.find(u => u.id === targetId);
+  if (!me || !target) return;
+
   if (!me.friends.includes(targetId)) {
     me.friends.push(targetId);
     target.friends.push(me.id);
