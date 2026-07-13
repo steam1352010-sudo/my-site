@@ -277,3 +277,13 @@ button:hover, .btn:hover { background: #365899; }
   width: 100%; margin-top: 6px; padding: 5px;
   border: 1px solid #ccc; border-radius: 3px;
 }
+
+.site-footer {
+  text-align: center;
+  padding: 14px 10px;
+  font-size: 13px;
+  color: #65676b;
+  border-top: 1px solid #dfe3e8;
+  background: #f7f8fa;
+  margin-top: 20px;
+}
