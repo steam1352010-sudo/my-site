@@ -17,6 +17,16 @@ a { text-decoration: none; color: #3b5998; cursor: pointer; }
 }
 .topbar .logo { color: white; font-size: 24px; font-weight: bold; }
 .topbar-user a { color: white; margin-right: 15px; font-size: 13px; }
+.topbar-root-name { color: white; margin-right: 12px; font-size: 13px; }
+.admin-badge {
+  display: inline-block;
+  background: #111;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+  font-size: 12px;
+}
 
 .container {
   max-width: 950px;
@@ -69,6 +79,16 @@ button, .btn {
 }
 button:hover, .btn:hover { background: #365899; }
 
+.danger-btn {
+  background: #c0392b;
+}
+.danger-btn:hover {
+  background: #a93226;
+}
+.danger-link {
+  color: #c0392b !important;
+}
+
 .login-box { max-width: 400px; margin: 60px auto; }
 .error { color: red; font-size: 13px; }
 .switch-link { font-size: 12px; margin-top: 10px; }
@@ -88,6 +108,60 @@ button:hover, .btn:hover { background: #365899; }
   white-space: pre-wrap;
   line-height: 1.5;
   margin: 0 0 8px;
+}
+
+.banned-note {
+  color: #c0392b;
+  font-weight: bold;
+  font-size: 12px;
+  display: block;
+  margin-top: 4px;
+}
+.inline-note {
+  display: inline-block;
+  margin-right: 6px;
+}
+.banned-name {
+  color: #c0392b !important;
+}
+
+.admin-panel {
+  border: 1px solid #cfd7e6;
+  background: #f8fbff;
+}
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #e3e6ef;
+  border-radius: 6px;
+}
+.admin-row-banned {
+  border-color: #f5b7b1;
+  background: #fff7f7;
+}
+.admin-info {
+  flex: 1;
+  min-width: 0;
+}
+.admin-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .post { border-bottom: 1px solid #eee; padding: 10px 0; }
